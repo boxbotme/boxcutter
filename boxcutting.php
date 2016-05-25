@@ -2,7 +2,7 @@
 /**
  * Project Ripple
  * Boxcutter
- * Boxcutting
+ * Boxcutting - where all the stuff gets done
 */
 
 #require_once ( "translations.php" );
@@ -20,7 +20,7 @@ class Boxcutting {
   public $session_action = array (
     'Do you want pizza? Y/N' => true,
   );
-  
+
   function __construct( $customer_in, $msg_in, $session_in ) {
     $this->customer = $customer_in;
     $this->msg = $msg_in;
@@ -67,7 +67,10 @@ class Boxcutting {
     }
     return false;
   }
-  function process() {
+  // for legacy purposes only
+  function process() { return $this->respond_process(); }
+  // new name of process()
+  function respond_process() {
     $response = "Unrecognized command. Type in HELPME for more info.";
     if ( $this->stringfinder( $this->msg ) != false ) {
       $response = $this->stringfinder( $this->msg );
@@ -82,5 +85,21 @@ class Boxcutting {
     }
     return $response;
   }
-}
+  function send_process( $sendto, $message, $session_to_set, $session_to_set_value ) {
+    require_once ( "boxcutter_settings.php" );
+    require_once ( "twilio-php/Services/Twilio.php" );
 
+    $client = new Services_Twilio($sid, $token);
+
+    // Set our Twilio phone number here
+    $twilio_from = $twilio_phone_number;
+    $sms = $client->account->messages->sendMessage( $twilio_from, $sendto, $message );
+    $this->set_session($session_to_set, $session_to_set_value);
+    return $sms;
+  }
+  function send_process_multiple( $sendto, $messages, $sessions_to_set, $sessions_to_set_values ) {
+    for ( $i = 0; $i < sizeof ( $sendto ); $i++ ) {
+      $this->send_process( $sendto[$i], $messages[$i], $sessions_to_set[$i], $sessions_to_set_value[$i] );
+    }
+  }
+}
